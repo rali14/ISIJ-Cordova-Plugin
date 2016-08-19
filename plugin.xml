@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='utf-8'?>
+<plugin id="cordova-plugin-adhaan-scheduler" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+    <name>ISIJAdhaanScheduler</name>
+    <js-module name="ISIJAdhaanScheduler" src="www/ISIJAdhaanScheduler.js">
+        <clobbers target="cordova.plugins.ISIJAdhaanScheduler" />
+    </js-module>
+    <platform name="android">
+        <config-file parent="/*" target="res/xml/config.xml">
+            <preference name="KeepRunning" value="true" />
+            <feature name="ISIJAdhaanScheduler">
+                <param name="android-package" value="cordova.plugin.isij.ISIJAdhaanScheduler" />
+            </feature>
+        </config-file>
+       <!--  <config-file parent="/*" target="AndroidManifest.xml">
+
+            <service  android:name="cordova.plugin.isij.ISIJAdhaanSchedulerFG"/>
+        </config-file>  -->
+        <config-file parent="/manifest/application" target="AndroidManifest.xml">
+            <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+            <uses-permission android:name="android.permission.WAKE_LOCK"/>
+            <service  android:name="cordova.plugin.isij.ISIJAdhaanSchedulerFG"/>
+             <receiver android:name="cordova.plugin.isij.AlarmReceiver">
+              <intent-filter>
+                   <action android:name="android.intent.action.BOOT_COMPLETED"/>
+              </intent-filter>
+            </receiver>
+
+        </config-file>
+        <source-file src="src/android/ISIJAdhaanScheduler.java" target-dir="src/cordova/plugin/isij" />
+        <source-file src="src/android/ISIJAdhaanSchedulerFG.java" target-dir="src/cordova/plugin/isij" />
+        <source-file src="src/android/AlarmReceiver.java" target-dir="src/cordova/plugin/isij" />
+
+        <resource-file src="adhaan.mp3" target="assets" />
+
+    </platform>
+</plugin>
