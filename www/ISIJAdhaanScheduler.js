@@ -8,6 +8,10 @@ exports.start = function(success, error) {
     exec(success, error, "ISIJAdhaanScheduler", "start", []);
 };
 
+exports.schedule = function(timestamp,success, error) {
+    exec(success, error, "ISIJAdhaanScheduler", "schedule", [timestamp]);
+};
+
 exports.stopCurrent = function(success, error) {
     exec(success, error, "ISIJAdhaanScheduler", "stopCurrent", []);
 };

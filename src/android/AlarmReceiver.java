@@ -31,7 +31,7 @@ public class AlarmReceiver extends BroadcastReceiver {
          Intent service_intent = new Intent(
                 context, ISIJAdhaanSchedulerFG.class);
 
-
+        service_intent.putExtra("receiver", intent.getParcelableExtra("receiver"));
 
          try {
             // context.bindService(

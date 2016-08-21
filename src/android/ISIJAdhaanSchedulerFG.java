@@ -24,6 +24,9 @@ import android.app.AlarmManager;
 import android.app.IntentService;
 import android.widget.Toast;
 
+import android.os.ResultReceiver;
+import android.os.Bundle;
+
 
 /**
  * This class echoes a string called from JavaScript.
@@ -35,6 +38,7 @@ public class ISIJAdhaanSchedulerFG extends Service {
     MediaPlayer objPlayer;
     final Timer scheduler = new Timer();
     TimerTask keepAliveTask;
+    ResultReceiver resultReceiver;
 
 
     /**
@@ -46,6 +50,14 @@ public class ISIJAdhaanSchedulerFG extends Service {
     }
 
 
+     @Override
+     public int onStartCommand(Intent intent, int flags, int startId) {
+
+      resultReceiver = intent.getParcelableExtra("receiver");
+
+      return START_STICKY;
+     }
+
 
      /**
      * Put the service in a foreground state to prevent app from being killed
@@ -54,15 +66,19 @@ public class ISIJAdhaanSchedulerFG extends Service {
     @Override
     public void onCreate () {
         super.onCreate();
-
         keepAwake();
         showNotification();
         playAdhaan();
+
+
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        Bundle bundle = new Bundle();
+        bundle.putString("end", "Timer Stopped....");
+        resultReceiver.send(200, bundle);
         objPlayer.stop();
         sleepWell();
     }
