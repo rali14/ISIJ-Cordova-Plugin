@@ -1,16 +1,20 @@
 var exec = require('cordova/exec');
 
 
-exports.start = function(success, error) {
-    exec(success, error, "ISIJAdhaanScheduler", "start", []);
+exports.startService = function(success, error) {
+    exec(success, error, "ISIJAdhaanScheduler", "startService", []);
 };
 
-exports.schedule = function(timestamp,success, error) {
-    exec(success, error, "ISIJAdhaanScheduler", "schedule", [timestamp]);
+exports.stopService = function(success, error) {
+    exec(success, error, "ISIJAdhaanScheduler", "stopService", []);
 };
 
-exports.stopCurrent = function(success, error) {
-    exec(success, error, "ISIJAdhaanScheduler", "stopCurrent", []);
+exports.getServiceStatus = function(success, error) {
+    exec(success, error, "ISIJAdhaanScheduler", "getServiceStatus", []);
+};
+
+exports.stopCurrentAdhaan = function(success, error) {
+    exec(success, error, "ISIJAdhaanScheduler", "stopCurrentAdhaan", []);
 };
 
 exports.onAdhaanStarted = function(success, error) {
@@ -23,4 +27,14 @@ exports.onAdhaanStopped = function(success, error) {
 
 exports.getAdhaanStatus = function(success, error) {
     exec(success, error, "ISIJAdhaanScheduler", "getAdhaanStatus", []);
+};
+
+exports.skipUpcomingAdhaan = function(success, error) {
+    exec(success, error, "ISIJAdhaanScheduler", "skipUpcomingAdhaan", []);
+};
+
+exports.getUpcomingAdhaanTime = function(success, error) {
+    exec(function(timetampStr) {
+        success(parseInt(timetampStr));
+    }, error, "ISIJAdhaanScheduler", "getUpcomingAdhaanTime", []);
 };

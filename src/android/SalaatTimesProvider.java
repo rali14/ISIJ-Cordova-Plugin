@@ -19,20 +19,23 @@ public class SalaatTimesProvider {
         this.parseJSON(this.preloadJSONFile(jsonInputStream));
     }
 
-    public Date getUpcomingAdhaanTime() {
-        return this.findUpcomingAdhaanTime(0);
+    public Date getUpcomingAdhaanTime(Date afterDateTime) {
+        return this.findUpcomingAdhaanTime(0, afterDateTime);
     }
 
-    private Date findUpcomingAdhaanTime(int dayAppend) {
+    private Date findUpcomingAdhaanTime(int dayAppend, Date afterDateTime) {
         Calendar now = GregorianCalendar.getInstance();
 
-        now.roll(GregorianCalendar.DAY_OF_MONTH, dayAppend);
+        now.add(GregorianCalendar.DAY_OF_MONTH, dayAppend);
 
         int hourNum = now.HOUR_OF_DAY;
         int dayNum = now.DAY_OF_MONTH - 1;
-        int monthNum = now.MONTH ;
+        int monthNum = now.MONTH;
+
+        now.set(Calendar.SECOND, 0);
 
 
+        System.out.println("Day Append "+dayAppend);
 
         try {
             JSONArray todaysTimes = salaatTimesArray.getJSONArray(monthNum).getJSONArray(dayNum);
@@ -46,11 +49,12 @@ public class SalaatTimesProvider {
                     continue;
                 }
 
-                Date currenTime = now.getTime();
+                  Date currenTime = now.getTime();
 
                   String[] salaatTimeArray = todaysTimes.getString(i).split(":");
                   Calendar salaatTimeCal = GregorianCalendar.getInstance();
-
+                  salaatTimeCal.setTime(now.getTime());
+                  salaatTimeCal.set(Calendar.SECOND, 0);
                   salaatTimeCal.set(GregorianCalendar.HOUR, Integer.parseInt(salaatTimeArray[0]) % 12);
                   salaatTimeCal.set(GregorianCalendar.MINUTE, Integer.parseInt(salaatTimeArray[1]));
 
@@ -60,17 +64,37 @@ public class SalaatTimesProvider {
                     salaatTimeCal.set(GregorianCalendar.AM_PM, GregorianCalendar.AM);
                   }
 
-                  if (currenTime.before(salaatTimeCal.getTime())) {
-                    nextSalaatTime = salaatTimeCal.getTime();
-                    break;
-                  }
 
+                  if (currenTime.before(salaatTimeCal.getTime()) && afterDateTime == null) {
+
+                        nextSalaatTime = salaatTimeCal.getTime();
+                        break;
+
+                  } else if (afterDateTime != null) {
+                            System.out.println("----");
+                            System.out.println(currenTime);
+                            System.out.println(afterDateTime);
+                            System.out.println(salaatTimeCal.getTime());
+                             System.out.println("----");
+
+                             //Create a slight time different between salaat time and skip time
+                             Calendar atCal = GregorianCalendar.getInstance();
+                             atCal.setTime(afterDateTime);
+                             atCal.add(GregorianCalendar.SECOND, 30);
+
+                        if (salaatTimeCal.getTime().after(atCal.getTime())) {
+
+                            nextSalaatTime = salaatTimeCal.getTime();
+                            break;
+                        }
+                  }
             }
 
             if (nextSalaatTime != null) {
                 return nextSalaatTime;
             } else {
-                return findUpcomingAdhaanTime(dayAppend + 1);
+
+                return findUpcomingAdhaanTime(dayAppend + 1, afterDateTime);
             }
 
         } catch (Exception e) {

@@ -28,11 +28,13 @@ public class ISIJAdhaanScheduler extends CordovaPlugin {
 
 
     private Boolean isActive = false;
+    private Boolean isBind = false;
     private Boolean isAdhaanActive = false;
 
 
     private CallbackContext adhaanStartedCallbackContext;
     private CallbackContext adhaanStoppedCallbackContext;
+    private CallbackContext schedulerServiceStartedCallbackContext;
 
 
     AdhaanSchedulerService schedulerService;
@@ -46,6 +48,8 @@ public class ISIJAdhaanScheduler extends CordovaPlugin {
                     (AdhaanSchedulerService.ForegroundBinder) service;
 
             schedulerService = binder.getService();
+
+            schedulerServiceStartedCallbackContext.success();
         }
 
         @Override
@@ -58,15 +62,11 @@ public class ISIJAdhaanScheduler extends CordovaPlugin {
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        if (action.equals("start")) {
-            this.start(callbackContext);
+        if (action.equals("startService")) {
+            this.startService(callbackContext);
             return true;
-        } else if (action.equals("stopCurrent")) {
+        } else if (action.equals("stopCurrentAdhaan")) {
             this.stopCurrentAlarm(callbackContext);
-            return true;
-        } else if (action.equals("schedule")) {
-            Long timestamp = args.getLong(0);
-            this.scheduleAlarm(timestamp,callbackContext);
             return true;
         } else if (action.equals("onAdhaanStarted")) {
             this.adhaanStartedCallbackContext = callbackContext;
@@ -77,20 +77,40 @@ public class ISIJAdhaanScheduler extends CordovaPlugin {
         } else if (action.equals("getAdhaanStatus")) {
             callbackContext.success(this.isAdhaanActive ? "true" : "false");
             return true;
+        } else if (action.equals("getServiceStatus")) {
+            callbackContext.success(this.isActive ? "true" : "false");
+            return true;
+        } else if (action.equals("skipUpcomingAdhaan")) {
+            this.skipUpcomingAdhaan(callbackContext);
+            return true;
+        } else if (action.equals("getUpcomingAdhaanTime")) {
+            this.getUpcomingAdhaanTime(callbackContext);
+            return true;
         }
         return false;
     }
-    private void scheduleAlarm(Long timestamp, CallbackContext callbackContext) {
-        // if (timestamp != null) {
-        //     alarmManager.setExact(AlarmManager.RTC_WAKEUP, timestamp, pendingIntent);
-        //     Toast.makeText(cordova.getActivity(), "Alarm Set for "+timestamp, Toast.LENGTH_SHORT).show();
-        //     callbackContext.success();
-        // } else {
-        //     callbackContext.error("Unable to schedule alarm.");
-        // }
+
+    private void getUpcomingAdhaanTime(CallbackContext callbackContext) {
+
+        if (!isBind) return;
+
+        long time = schedulerService.getUpcomingAdhaanTime().getTime();
+        callbackContext.success(Long.toString(time));
+    }
+
+    private void skipUpcomingAdhaan(CallbackContext callbackContext) {
+
+        if (!isBind) return;
+
+       schedulerService.skipUpcomingAdhaan();
+
+       callbackContext.success();
     }
 
     private void stopCurrentAlarm(CallbackContext callbackContext) {
+
+        if (!isBind) return;
+
         Activity context = cordova.getActivity();
 
        this.isActive = false;
@@ -99,7 +119,10 @@ public class ISIJAdhaanScheduler extends CordovaPlugin {
     }
 
 
-    private void start(CallbackContext callbackContext) {
+    private void startService(CallbackContext callbackContext) {
+
+        if (isBind) return;
+
         this.isActive = true;
 
         SchedulerResultReceiver schedulerResultReceiver = new SchedulerResultReceiver(null);
@@ -117,6 +140,34 @@ public class ISIJAdhaanScheduler extends CordovaPlugin {
 
         }
 
+        isBind = true;
+
+        schedulerServiceStartedCallbackContext = callbackContext;
+
+
+    }
+
+    private void stopService(CallbackContext callbackContext) {
+
+        if (!isBind) return;
+
+        this.isActive = true;
+
+        SchedulerResultReceiver schedulerResultReceiver = new SchedulerResultReceiver(null);
+
+         Intent service_intent = new Intent(
+                cordova.getActivity(), AdhaanSchedulerService.class);
+
+
+         try {
+            cordova.getActivity().unbindService(connection);
+            cordova.getActivity().stopService(service_intent);
+        } catch (Exception e) {
+
+        }
+
+        isBind = false;
+
         callbackContext.success();
     }
 
@@ -131,18 +182,19 @@ public class ISIJAdhaanScheduler extends CordovaPlugin {
       protected void onReceiveResult(int resultCode, Bundle resultData) {
         switch (resultCode) {
             case 100:
-                Toast.makeText(cordova.getActivity(), "Alarm Started", Toast.LENGTH_SHORT).show();
                 isAdhaanActive = true;
                 if (adhaanStartedCallbackContext != null) {
                     adhaanStartedCallbackContext.success();
                 }
             break;
             case 200:
-                Toast.makeText(cordova.getActivity(), "Alarm Stopped", Toast.LENGTH_SHORT).show();
                 isAdhaanActive = false;
                 if (adhaanStoppedCallbackContext != null) {
                     adhaanStoppedCallbackContext.success();
                 }
+            break;
+            case 300:
+
             break;
         }
 

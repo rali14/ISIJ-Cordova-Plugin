@@ -28,6 +28,7 @@ import android.os.PowerManager;
 
 import java.util.Date;
 import java.text.SimpleDateFormat;
+import android.text.format.DateUtils;
 
 
 /**
@@ -80,27 +81,33 @@ public class AdhaanSchedulerService extends Service {
      public int onStartCommand(Intent intent, int flags, int startId) {
 
 
+        pluginResultReceiver = intent.getParcelableExtra("receiver");
 
-      pluginResultReceiver = intent.getParcelableExtra("receiver");
+        this.scheduleNextAlarm();
 
-
-        this.setupAlarmManager();
-
-
-
-        this.scheduleAlarm(this.upcomingAdhaanTime);
+        //Notify Plugin Schedule Receiver that service has started
+        Bundle bundle = new Bundle();
+        pluginResultReceiver.send(300, bundle);
 
         return START_STICKY;
      }
 
      private void scheduleAlarm(Date date) {
         alarmManager.setExact(AlarmManager.RTC_WAKEUP, date.getTime(), pendingIntent);
-        Toast.makeText(this, "Alarm Set for "+this.formatSalaatTime(date), Toast.LENGTH_SHORT).show();
      }
 
      private void scheduleNextAlarm() {
-        this.upcomingAdhaanTime = this.salaatTimesProvider.getUpcomingAdhaanTime();
+        this.upcomingAdhaanTime = this.salaatTimesProvider.getUpcomingAdhaanTime(this.upcomingAdhaanTime);
         this.scheduleAlarm(this.upcomingAdhaanTime);
+
+        //make notification
+        Notification notification = makeNotification("Next Adhaan will be played "+
+          this.formatSalaatTime(this.upcomingAdhaanTime));
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.notify(NOTIFICATION_ID, notification);
+
+
+
      }
 
      /**
@@ -110,15 +117,20 @@ public class AdhaanSchedulerService extends Service {
     @Override
     public void onCreate () {
         super.onCreate();
+
+         keepAwake();
+        this.setupAlarmManager();
+
          //Load Salaat Times
         try {
           this.salaatTimesProvider = new SalaatTimesProvider(getAssets().open("times.json"));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        this.upcomingAdhaanTime = this.salaatTimesProvider.getUpcomingAdhaanTime();
 
-        keepAwake();
+
+
+
 
     }
 
@@ -130,23 +142,9 @@ public class AdhaanSchedulerService extends Service {
 
 
     private void keepAwake() {
-        // final Handler handler = new Handler();
-        // keepAliveTask = new TimerTask() {
-        //     @Override
-        //     public void run() {
-        //         handler.post(new Runnable() {
-        //             @Override
-        //             public void run() {
-        //                 // Nothing to do here
-        //                 // Log.d("BackgroundMode", "" + new Date().getTime());
-        //             }
-        //         });
-        //     }
-        // };
 
-        // scheduler.schedule(keepAliveTask, 0, 1000);
 
-        startForeground(NOTIFICATION_ID, makeNotification());
+        startForeground(NOTIFICATION_ID, makeNotification(""));
 
 
         PowerManager powerMgr = (PowerManager)
@@ -163,8 +161,7 @@ public class AdhaanSchedulerService extends Service {
      * Stop background mode.
      */
     private void sleepWell() {
-        // keepAliveTask.cancel();
-      // stopForeground(true);
+      stopForeground(true);
 
         if (wakeLock != null) {
             wakeLock.release();
@@ -191,29 +188,47 @@ public class AdhaanSchedulerService extends Service {
                 this, AdhaanPlayerService.class);
         // context.unbindService(connection);
         this.stopService(intent);
+
+
+
+        //Notify Plugin Receiver
+        Bundle bundle = new Bundle();
+        pluginResultReceiver.send(200, bundle);
+
+        //Schedule next Alarm
+        scheduleNextAlarm();
     }
 
 
+    protected void skipUpcomingAdhaan() {
+        this.stopCurrentAlarm();
+        //Reschedule next
+        scheduleNextAlarm();
+    }
+
+    protected Date getUpcomingAdhaanTime() {
+
+        return this.upcomingAdhaanTime;
+    }
+
 
      private String formatSalaatTime(Date time) {
-       SimpleDateFormat formatter = new SimpleDateFormat("h:m a");
-        try {
-            return formatter.format(time);
-        } catch (Exception e) {
-          e.printStackTrace();
-          return "";
-        }
+
+      return DateUtils.getRelativeDateTimeString(this.getApplicationContext(), time.getTime(),
+        DateUtils.HOUR_IN_MILLIS, DateUtils.WEEK_IN_MILLIS, 0).toString();
      }
 
-     private Notification makeNotification() {
+     private Notification makeNotification(String text) {
 
          Notification.Builder notificationBuilder = new Notification.Builder(this)
             .setContentTitle("ISIJ Adhaan Player")
-            .setContentText("Next Adhaan is at "+this.formatSalaatTime(this.upcomingAdhaanTime))
             .setOngoing(true)
             .setSmallIcon(getIconResId());
 
-            NotificationManager notificationManager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
+            if (!text.equals("")) {
+              notificationBuilder.setContentText(text);
+            }
+
 
             return notificationBuilder.build();
     }

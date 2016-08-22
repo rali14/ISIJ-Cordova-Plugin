@@ -79,8 +79,6 @@ public class AdhaanPlayerService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Bundle bundle = new Bundle();
-        resultReceiver.send(200, bundle);
         objPlayer.stop();
         sleepWell();
     }
@@ -105,7 +103,8 @@ public class AdhaanPlayerService extends Service {
             objPlayer = new MediaPlayer();
             objPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                 public void onCompletion(MediaPlayer mp) {
-                    sleepWell();
+                    Bundle bundle = new Bundle();
+                    resultReceiver.send(200, bundle);
                 }
             });
             objPlayer.setDataSource(afd.getFileDescriptor(),afd.getStartOffset(),afd.getLength());
@@ -133,6 +132,7 @@ public class AdhaanPlayerService extends Service {
 
         scheduler.schedule(keepAliveTask, 0, 1000);
     }
+
 
     /**
      * Stop background mode.
