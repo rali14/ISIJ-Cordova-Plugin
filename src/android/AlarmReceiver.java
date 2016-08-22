@@ -5,7 +5,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 
-
+import android.widget.Toast;
+import android.os.ResultReceiver;
+import android.os.Bundle;
+import android.os.Handler;
 
 
 public class AlarmReceiver extends BroadcastReceiver {
@@ -24,14 +27,23 @@ public class AlarmReceiver extends BroadcastReceiver {
     //     }
     // };
 
+    Context context;
+    ResultReceiver schedulerServiceResultReceiver;
+
+
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        this.context = context;
 
-         Intent service_intent = new Intent(
-                context, ISIJAdhaanSchedulerFG.class);
 
-        service_intent.putExtra("receiver", intent.getParcelableExtra("receiver"));
+        Intent service_intent = new Intent(
+                context, AdhaanPlayerService.class);
+
+        this.schedulerServiceResultReceiver = intent.getParcelableExtra("receiver");
+
+        ServiceResultReceiver serviceResultReceiver = new ServiceResultReceiver(null);
+        service_intent.putExtra("receiver", serviceResultReceiver);
 
          try {
             // context.bindService(
@@ -44,5 +56,15 @@ public class AlarmReceiver extends BroadcastReceiver {
         }
     }
 
+    class ServiceResultReceiver extends ResultReceiver
+     {
+      public ServiceResultReceiver(Handler handler) {
+       super(handler);
+      }
 
-}
+      @Override
+      protected void onReceiveResult(int resultCode, Bundle resultData) {
+        schedulerServiceResultReceiver.send(resultCode, resultData);
+      }
+     }
+    }

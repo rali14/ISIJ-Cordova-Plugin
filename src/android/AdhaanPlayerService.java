@@ -31,7 +31,7 @@ import android.os.Bundle;
 /**
  * This class echoes a string called from JavaScript.
  */
-public class ISIJAdhaanSchedulerFG extends Service {
+public class AdhaanPlayerService extends Service {
 
 
 
@@ -55,6 +55,12 @@ public class ISIJAdhaanSchedulerFG extends Service {
 
       resultReceiver = intent.getParcelableExtra("receiver");
 
+      showNotification();
+        playAdhaan();
+
+        Bundle bundle = new Bundle();
+        resultReceiver.send(100, bundle);
+
       return START_STICKY;
      }
 
@@ -67,9 +73,6 @@ public class ISIJAdhaanSchedulerFG extends Service {
     public void onCreate () {
         super.onCreate();
         keepAwake();
-        showNotification();
-        playAdhaan();
-
 
     }
 
@@ -77,7 +80,6 @@ public class ISIJAdhaanSchedulerFG extends Service {
     public void onDestroy() {
         super.onDestroy();
         Bundle bundle = new Bundle();
-        bundle.putString("end", "Timer Stopped....");
         resultReceiver.send(200, bundle);
         objPlayer.stop();
         sleepWell();
@@ -124,8 +126,6 @@ public class ISIJAdhaanSchedulerFG extends Service {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        // Nothing to do here
-                        // Log.d("BackgroundMode", "" + new Date().getTime());
                     }
                 });
             }
@@ -139,7 +139,6 @@ public class ISIJAdhaanSchedulerFG extends Service {
      */
     private void sleepWell() {
         keepAliveTask.cancel();
-        Toast.makeText(this, "Task Stopped", Toast.LENGTH_SHORT).show();
     }
 
     /**

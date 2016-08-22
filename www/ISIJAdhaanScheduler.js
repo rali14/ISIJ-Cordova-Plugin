@@ -1,8 +1,5 @@
 var exec = require('cordova/exec');
 
-exports.coolMethod = function(arg0, success, error) {
-    exec(success, error, "ISIJAdhaanScheduler", "coolMethod", [arg0]);
-};
 
 exports.start = function(success, error) {
     exec(success, error, "ISIJAdhaanScheduler", "start", []);
@@ -14,4 +11,16 @@ exports.schedule = function(timestamp,success, error) {
 
 exports.stopCurrent = function(success, error) {
     exec(success, error, "ISIJAdhaanScheduler", "stopCurrent", []);
+};
+
+exports.onAdhaanStarted = function(success, error) {
+    exec(success, error, "ISIJAdhaanScheduler", "onAdhaanStarted", []);
+};
+
+exports.onAdhaanStopped = function(success, error) {
+    exec(success, error, "ISIJAdhaanScheduler", "onAdhaanStopped", []);
+};
+
+exports.getAdhaanStatus = function(success, error) {
+    exec(success, error, "ISIJAdhaanScheduler", "getAdhaanStatus", []);
 };

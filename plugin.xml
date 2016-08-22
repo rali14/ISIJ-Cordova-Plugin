@@ -16,9 +16,9 @@
             <service  android:name="cordova.plugin.isij.ISIJAdhaanSchedulerFG"/>
         </config-file>  -->
         <config-file parent="/manifest/application" target="AndroidManifest.xml">
-            <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-            <uses-permission android:name="android.permission.WAKE_LOCK"/>
-            <service  android:name="cordova.plugin.isij.ISIJAdhaanSchedulerFG"/>
+
+            <service  android:name="cordova.plugin.isij.AdhaanPlayerService"/>
+            <service  android:name="cordova.plugin.isij.AdhaanSchedulerService"/>
              <receiver android:name="cordova.plugin.isij.AlarmReceiver">
               <intent-filter>
                    <action android:name="android.intent.action.BOOT_COMPLETED"/>
@@ -26,11 +26,18 @@
             </receiver>
 
         </config-file>
+         <config-file target="AndroidManifest.xml" parent="/manifest">
+            <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+            <uses-permission android:name="android.permission.WAKE_LOCK"/>
+        </config-file>
         <source-file src="src/android/ISIJAdhaanScheduler.java" target-dir="src/cordova/plugin/isij" />
-        <source-file src="src/android/ISIJAdhaanSchedulerFG.java" target-dir="src/cordova/plugin/isij" />
+        <source-file src="src/android/AdhaanPlayerService.java" target-dir="src/cordova/plugin/isij" />
+        <source-file src="src/android/AdhaanSchedulerService.java" target-dir="src/cordova/plugin/isij" />
         <source-file src="src/android/AlarmReceiver.java" target-dir="src/cordova/plugin/isij" />
+        <source-file src="src/android/SalaatTimesProvider.java" target-dir="src/cordova/plugin/isij" />
 
         <resource-file src="adhaan.mp3" target="assets" />
+        <resource-file src="times.json" target="assets" />
 
     </platform>
 </plugin>
