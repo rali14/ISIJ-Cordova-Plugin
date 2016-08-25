@@ -44,6 +44,7 @@ public class AlarmReceiver extends BroadcastReceiver {
 
         ServiceResultReceiver serviceResultReceiver = new ServiceResultReceiver(null);
         service_intent.putExtra("receiver", serviceResultReceiver);
+        service_intent.putExtra("play_sound", intent.getBooleanExtra("play_sound", true));
 
          try {
             // context.bindService(

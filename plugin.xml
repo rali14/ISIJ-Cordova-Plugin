@@ -38,6 +38,7 @@
 
         <resource-file src="adhaan.mp3" target="assets" />
         <resource-file src="times.json" target="assets" />
+        <resource-file src="notification_icon.png" target="res/drawable-mdpi" />
 
     </platform>
 </plugin>

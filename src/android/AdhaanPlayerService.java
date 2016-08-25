@@ -33,6 +33,7 @@ import android.os.Bundle;
  */
 public class AdhaanPlayerService extends Service {
 
+    public static final int NOTIFICATION_ID = -324433954;
 
 
     MediaPlayer objPlayer;
@@ -53,13 +54,22 @@ public class AdhaanPlayerService extends Service {
      @Override
      public int onStartCommand(Intent intent, int flags, int startId) {
 
-      resultReceiver = intent.getParcelableExtra("receiver");
+      if (intent != null) {
+        resultReceiver = intent.getParcelableExtra("receiver");
+        Boolean playSound = intent.getBooleanExtra("play_sound", true);
+        showNotification();
+        if (playSound) {
+          playAdhaan();
+          Bundle bundle = new Bundle();
+          resultReceiver.send(100, bundle);
+        } else  {
+           Bundle bundle = new Bundle();
+          resultReceiver.send(201, bundle);
+        }
 
-      showNotification();
-        playAdhaan();
-
-        Bundle bundle = new Bundle();
-        resultReceiver.send(100, bundle);
+      } else {
+        sleepWell();
+      }
 
       return START_STICKY;
      }
@@ -79,7 +89,13 @@ public class AdhaanPlayerService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        objPlayer.stop();
+
+        // NotificationManager notificationManager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
+        // notificationManager.cancel(NOTIFICATION_ID);
+
+        if (objPlayer != null) {
+          objPlayer.stop();
+        }
         sleepWell();
     }
 
@@ -92,9 +108,22 @@ public class AdhaanPlayerService extends Service {
             // .setOngoing(true)
             .setSmallIcon(getIconResId());
 
+            Context context = getApplicationContext();
+            String pkgName  = context.getPackageName();
+            Intent intent   = context.getPackageManager().getLaunchIntentForPackage(pkgName);
+
+
+            if (intent != null) {
+                PendingIntent contentIntent = PendingIntent.getActivity(
+                        context, NOTIFICATION_ID, intent,
+                        PendingIntent.FLAG_UPDATE_CURRENT);
+
+                notificationBuilder.setContentIntent(contentIntent);
+            }
+
             NotificationManager notificationManager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
 
-            notificationManager.notify(0, notificationBuilder.build());
+            notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
     }
 
     private void playAdhaan() {
@@ -153,8 +182,14 @@ public class AdhaanPlayerService extends Service {
         String pkgName  = context.getPackageName();
 
         int resId;
-        resId = res.getIdentifier("icon", "drawable", pkgName);
+        resId = res.getIdentifier("notification_icon", "drawable", pkgName);
 
-        return resId;
+
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            return res.getIdentifier("notification_icon", "drawable", pkgName);
+        } else {
+            return res.getIdentifier("icon", "drawable", pkgName);
+        }
+
     }
 }

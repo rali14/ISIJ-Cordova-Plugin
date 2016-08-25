@@ -28,18 +28,18 @@ public class SalaatTimesProvider {
 
         now.add(GregorianCalendar.DAY_OF_MONTH, dayAppend);
 
-        int hourNum = now.HOUR_OF_DAY;
-        int dayNum = now.DAY_OF_MONTH - 1;
-        int monthNum = now.MONTH;
+        int hourNum = now.get(GregorianCalendar.HOUR_OF_DAY);
+        int dayNum = now.get(GregorianCalendar.DAY_OF_MONTH) - 1;
+        int monthNum = now.get(GregorianCalendar.MONTH);
 
         now.set(Calendar.SECOND, 0);
 
 
-        System.out.println("Day Append "+dayAppend);
 
         try {
             JSONArray todaysTimes = salaatTimesArray.getJSONArray(monthNum).getJSONArray(dayNum);
             Date nextSalaatTime = null;
+
             //Figure out current time
             for (int i = 0; i < todaysTimes.length(); i++) {
 
@@ -50,7 +50,6 @@ public class SalaatTimesProvider {
                 }
 
                   Date currenTime = now.getTime();
-
                   String[] salaatTimeArray = todaysTimes.getString(i).split(":");
                   Calendar salaatTimeCal = GregorianCalendar.getInstance();
                   salaatTimeCal.setTime(now.getTime());
@@ -71,11 +70,7 @@ public class SalaatTimesProvider {
                         break;
 
                   } else if (afterDateTime != null) {
-                            System.out.println("----");
-                            System.out.println(currenTime);
-                            System.out.println(afterDateTime);
-                            System.out.println(salaatTimeCal.getTime());
-                             System.out.println("----");
+
 
                              //Create a slight time different between salaat time and skip time
                              Calendar atCal = GregorianCalendar.getInstance();
@@ -98,6 +93,7 @@ public class SalaatTimesProvider {
             }
 
         } catch (Exception e) {
+          e.printStackTrace();
             return null;
         }
     }

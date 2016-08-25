@@ -63,7 +63,10 @@ public class ISIJAdhaanScheduler extends CordovaPlugin {
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
         if (action.equals("startService")) {
-            this.startService(callbackContext);
+            this.startService(args.getBoolean(0),callbackContext);
+            return true;
+        } else if (action.equals("stopService")) {
+            this.stopService(callbackContext);
             return true;
         } else if (action.equals("stopCurrentAdhaan")) {
             this.stopCurrentAlarm(callbackContext);
@@ -86,6 +89,12 @@ public class ISIJAdhaanScheduler extends CordovaPlugin {
         } else if (action.equals("getUpcomingAdhaanTime")) {
             this.getUpcomingAdhaanTime(callbackContext);
             return true;
+        } else if (action.equals("disableAdhaanSound")) {
+            this.disableAdhaanSound(callbackContext);
+            return true;
+        } else if (action.equals("enableAdhaanSound")) {
+            this.enableAdhaanSound(callbackContext);
+            return true;
         }
         return false;
     }
@@ -96,6 +105,25 @@ public class ISIJAdhaanScheduler extends CordovaPlugin {
 
         long time = schedulerService.getUpcomingAdhaanTime().getTime();
         callbackContext.success(Long.toString(time));
+    }
+
+
+    private void disableAdhaanSound(CallbackContext callbackContext) {
+
+        if (!isBind) return;
+
+       schedulerService.disableAdhaanSound();
+
+       callbackContext.success();
+    }
+
+    private void enableAdhaanSound(CallbackContext callbackContext) {
+
+        if (!isBind) return;
+
+       schedulerService.enableAdhaanSound();
+
+       callbackContext.success();
     }
 
     private void skipUpcomingAdhaan(CallbackContext callbackContext) {
@@ -119,9 +147,9 @@ public class ISIJAdhaanScheduler extends CordovaPlugin {
     }
 
 
-    private void startService(CallbackContext callbackContext) {
+    private void startService(boolean enableSound, CallbackContext callbackContext) {
 
-        if (isBind) return;
+        if (isBind || isActive) return;
 
         this.isActive = true;
 
@@ -131,6 +159,7 @@ public class ISIJAdhaanScheduler extends CordovaPlugin {
                 cordova.getActivity(), AdhaanSchedulerService.class);
 
          service_intent.putExtra("receiver", schedulerResultReceiver);
+         service_intent.putExtra("enable_sound", enableSound);
 
          try {
             cordova.getActivity().bindService(
@@ -149,9 +178,9 @@ public class ISIJAdhaanScheduler extends CordovaPlugin {
 
     private void stopService(CallbackContext callbackContext) {
 
-        if (!isBind) return;
+        if (!isBind || !isActive) return;
 
-        this.isActive = true;
+        this.isActive = false;
 
         SchedulerResultReceiver schedulerResultReceiver = new SchedulerResultReceiver(null);
 

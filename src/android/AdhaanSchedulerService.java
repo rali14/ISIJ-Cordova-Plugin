@@ -29,6 +29,8 @@ import android.os.PowerManager;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import android.text.format.DateUtils;
+import java.util.Calendar;
+import java.text.DateFormat;
 
 
 /**
@@ -37,11 +39,14 @@ import android.text.format.DateUtils;
 public class AdhaanSchedulerService extends Service {
 
     public static final int NOTIFICATION_ID = -374433954;
+    public static final int ALARM_TAG = -312333954;
 
 
     private AlarmManager alarmManager;
     private PendingIntent pendingIntent;
     private SalaatTimesProvider salaatTimesProvider;
+    private Boolean soundEnabled;
+    private ResultReceiver resultReceiver;
 
 
     final Timer scheduler = new Timer();
@@ -83,6 +88,8 @@ public class AdhaanSchedulerService extends Service {
 
         pluginResultReceiver = intent.getParcelableExtra("receiver");
 
+        this.soundEnabled = intent.getExtras().getBoolean("enable_sound");
+
         this.scheduleNextAlarm();
 
         //Notify Plugin Schedule Receiver that service has started
@@ -93,20 +100,23 @@ public class AdhaanSchedulerService extends Service {
      }
 
      private void scheduleAlarm(Date date) {
+        Intent alarmIntent = new Intent(this, AlarmReceiver.class);
+        alarmIntent.putExtra("receiver", resultReceiver);
+        alarmIntent.putExtra("play_sound", this.soundEnabled);
+        pendingIntent = PendingIntent.getBroadcast(this, ALARM_TAG, alarmIntent, PendingIntent.FLAG_CANCEL_CURRENT);
         alarmManager.setExact(AlarmManager.RTC_WAKEUP, date.getTime(), pendingIntent);
      }
 
      private void scheduleNextAlarm() {
         this.upcomingAdhaanTime = this.salaatTimesProvider.getUpcomingAdhaanTime(this.upcomingAdhaanTime);
-        this.scheduleAlarm(this.upcomingAdhaanTime);
-
+        if (this.upcomingAdhaanTime != null) {
+            this.scheduleAlarm(this.upcomingAdhaanTime);
+        }
         //make notification
         Notification notification = makeNotification("Next Adhaan will be played "+
           this.formatSalaatTime(this.upcomingAdhaanTime));
         NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         mNotificationManager.notify(NOTIFICATION_ID, notification);
-
-
 
      }
 
@@ -119,7 +129,10 @@ public class AdhaanSchedulerService extends Service {
         super.onCreate();
 
          keepAwake();
-        this.setupAlarmManager();
+
+         this.resultReceiver = new AlarmResultReceiver(null);
+
+         this.alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 
          //Load Salaat Times
         try {
@@ -137,6 +150,9 @@ public class AdhaanSchedulerService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        if (pendingIntent != null) {
+            this.alarmManager.cancel(pendingIntent);
+        }
         sleepWell();
     }
 
@@ -169,36 +185,47 @@ public class AdhaanSchedulerService extends Service {
         }
     }
 
+    private void cancelCurrentAlarm() {
+        // Intent i = new Intent(this, AdhaanPlayerService.class);
 
-    private void setupAlarmManager() {
-        AlarmResultReceiver resultReceiver = new AlarmResultReceiver(null);
-
-        Intent alarmIntent = new Intent(this, AlarmReceiver.class);
-        alarmIntent.putExtra("receiver", resultReceiver);
-
-        pendingIntent = PendingIntent.getBroadcast(this, 0, alarmIntent, 0);
-
-        this.alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        // PendingIntent pi = PendingIntent.getBroadcast(this, ALARM_TAG, i,
+        //         PendingIntent.FLAG_NO_CREATE);
+        if (pendingIntent != null) {
+          System.out.println("Alarm Cancelled");
+            alarmManager.cancel(pendingIntent);
+        }
     }
 
+
     protected void stopCurrentAlarm() {
-        this.alarmManager.cancel(pendingIntent);
+        this.cancelCurrentAlarm();
        //Stop Service
         Intent intent = new Intent(
                 this, AdhaanPlayerService.class);
         // context.unbindService(connection);
         this.stopService(intent);
 
-
-
-        //Notify Plugin Receiver
-        Bundle bundle = new Bundle();
-        pluginResultReceiver.send(200, bundle);
-
-        //Schedule next Alarm
-        scheduleNextAlarm();
     }
 
+    protected void disableAdhaanSound() {
+        if (soundEnabled) {
+          System.out.println("Alarm Disabled");
+            this.stopCurrentAlarm();
+            this.soundEnabled = false;
+
+            this.scheduleAlarm(this.upcomingAdhaanTime);
+        }
+    }
+
+    protected void enableAdhaanSound() {
+        if (!soundEnabled) {
+          System.out.println("Alarm Enabled");
+            this.stopCurrentAlarm();
+            this.soundEnabled = true;
+
+            this.scheduleAlarm(this.upcomingAdhaanTime);
+        }
+    }
 
     protected void skipUpcomingAdhaan() {
         this.stopCurrentAlarm();
@@ -213,9 +240,14 @@ public class AdhaanSchedulerService extends Service {
 
 
      private String formatSalaatTime(Date time) {
+        if (DateUtils.isToday(time.getTime())) {
+            return "at "+DateUtils.formatSameDayTime(time.getTime(), (Calendar.getInstance()).getTimeInMillis(),
+            DateFormat.SHORT, DateFormat.SHORT).toString();
+        } else {
+            return DateUtils.getRelativeDateTimeString(this.getApplicationContext(),
+                time.getTime(), DateUtils.DAY_IN_MILLIS, DateUtils.WEEK_IN_MILLIS, 0).toString();
+        }
 
-      return DateUtils.getRelativeDateTimeString(this.getApplicationContext(), time.getTime(),
-        DateUtils.HOUR_IN_MILLIS, DateUtils.WEEK_IN_MILLIS, 0).toString();
      }
 
      private Notification makeNotification(String text) {
@@ -225,8 +257,24 @@ public class AdhaanSchedulerService extends Service {
             .setOngoing(true)
             .setSmallIcon(getIconResId());
 
+
             if (!text.equals("")) {
-              notificationBuilder.setContentText(text);
+              notificationBuilder.setStyle(new Notification.BigTextStyle().bigText(text))
+              .setContentText(text);
+
+            }
+
+            Context context = getApplicationContext();
+            String pkgName  = context.getPackageName();
+            Intent intent   = context.getPackageManager().getLaunchIntentForPackage(pkgName);
+
+
+            if (intent != null) {
+                PendingIntent contentIntent = PendingIntent.getActivity(
+                        context, NOTIFICATION_ID, intent,
+                        PendingIntent.FLAG_UPDATE_CURRENT);
+
+                notificationBuilder.setContentIntent(contentIntent);
             }
 
 
@@ -245,9 +293,15 @@ public class AdhaanSchedulerService extends Service {
         String pkgName  = context.getPackageName();
 
         int resId;
-        resId = res.getIdentifier("icon", "drawable", pkgName);
+        resId = res.getIdentifier("notification_icon", "drawable", pkgName);
 
-        return resId;
+
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            return res.getIdentifier("notification_icon", "drawable", pkgName);
+        } else {
+            return res.getIdentifier("icon", "drawable", pkgName);
+        }
+
     }
 
 
@@ -258,16 +312,28 @@ public class AdhaanSchedulerService extends Service {
 
       @Override
       protected void onReceiveResult(int resultCode, Bundle resultData) {
-        if (resultCode == 200) {
-          //Stop Service
-          Intent intent = new Intent(AdhaanSchedulerService.this, AdhaanPlayerService.class);
-          // context.unbindService(connection);
-          AdhaanSchedulerService.this.stopService(intent);
+        if (resultCode == 100) {
 
           //Schedule next Alarm
           scheduleNextAlarm();
+        } else if (resultCode == 200) {
+            //Stop Service
+          Intent intent = new Intent(AdhaanSchedulerService.this, AdhaanPlayerService.class);
+          // context.unbindService(connection);
+          AdhaanSchedulerService.this.stopService(intent);
+        } else if (resultCode == 201) {
+
+              //Stop Service
+              Intent intent = new Intent(AdhaanSchedulerService.this, AdhaanPlayerService.class);
+              // context.unbindService(connection);
+              AdhaanSchedulerService.this.stopService(intent);
+
+              //Schedule next Alarm
+              scheduleNextAlarm();
         }
+
         pluginResultReceiver.send(resultCode, resultData);
+
       }
      }
 }
