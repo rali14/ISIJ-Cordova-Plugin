@@ -253,7 +253,7 @@ public class AdhaanSchedulerService extends Service {
      private Notification makeNotification(String text) {
 
          Notification.Builder notificationBuilder = new Notification.Builder(this)
-            .setContentTitle("ISIJ Adhaan Player")
+            .setContentTitle("ISIJ of Toronto")
             .setOngoing(true)
             .setSmallIcon(getIconResId());
 
