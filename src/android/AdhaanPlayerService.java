@@ -102,7 +102,7 @@ public class AdhaanPlayerService extends Service {
 
     private void showNotification() {
          Notification.Builder notificationBuilder = new Notification.Builder(this)
-            .setContentTitle("Adhaan")
+            .setContentTitle("Salaat Time")
             .setContentText("It's time to pray!")
             .setTicker("ticker")
             // .setOngoing(true)
