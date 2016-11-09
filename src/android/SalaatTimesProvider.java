@@ -32,7 +32,8 @@ public class SalaatTimesProvider {
         int dayNum = now.get(GregorianCalendar.DAY_OF_MONTH) - 1;
         int monthNum = now.get(GregorianCalendar.MONTH);
 
-        now.set(Calendar.SECOND, 0);
+        //now.set(Calendar.SECOND, 0);
+        now.add(Calendar.SECOND, -now.get(Calendar.SECOND));
 
 
 
@@ -53,7 +54,8 @@ public class SalaatTimesProvider {
                   String[] salaatTimeArray = todaysTimes.getString(i).split(":");
                   Calendar salaatTimeCal = GregorianCalendar.getInstance();
                   salaatTimeCal.setTime(now.getTime());
-                  salaatTimeCal.set(Calendar.SECOND, 0);
+                  //salaatTimeCal.set(Calendar.SECOND, 0);
+                  salaatTimeCal.add(Calendar.SECOND, -salaatTimeCal.get(Calendar.SECOND));
                 
                 
                   int tmp = Integer.parseInt(salaatTimeArray[0]) % 12;
