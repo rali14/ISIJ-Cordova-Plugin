@@ -54,7 +54,15 @@ public class SalaatTimesProvider {
                   Calendar salaatTimeCal = GregorianCalendar.getInstance();
                   salaatTimeCal.setTime(now.getTime());
                   salaatTimeCal.set(Calendar.SECOND, 0);
-                  salaatTimeCal.set(GregorianCalendar.HOUR, Integer.parseInt(salaatTimeArray[0]) % 12);
+                
+                
+                  int tmp = Integer.parseInt(salaatTimeArray[0]) % 12;
+                
+                  if (tmp == 0) {
+                      tmp = 12;
+                  }
+                  salaatTimeCal.set(GregorianCalendar.HOUR, tmp);
+                  
                   salaatTimeCal.set(GregorianCalendar.MINUTE, Integer.parseInt(salaatTimeArray[1]));
 
                   if (i > 2) {
